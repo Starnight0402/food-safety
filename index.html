@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Third Wave Coffee - RESPECT Values</title>
+    <title>Third Wave Coffee - R.E.S.P.E.C.T. Values</title>
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -61,10 +61,18 @@
             margin: 0 0 15px 0;
             text-transform: uppercase;
         }
+
+        .clickable-instruction {
+            font-size: 16px;
+            margin: 20px 0;
+            text-align: center;
+            color: var(--text-color);
+            font-weight: 700;
+        }
         
         .values-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 10px;
             padding: 30px 20px;
         }
@@ -81,6 +89,8 @@
             transition: all 0.3s ease;
             border: 2px solid;
             background: white;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         
         /* Individual letter colors */
@@ -93,14 +103,15 @@
         .value-letter[data-value="t"] { color: var(--t-color); border-color: var(--t-color); }
         
         .value-letter:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.05);
         }
         
         .value-letter.active {
             color: white !important;
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
         
         .value-letter[data-value="r"].active { background: var(--r-color); }
@@ -163,24 +174,14 @@
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
+            display: block;
+            margin: 10px 0;
+            width: 100%;
         }
         
         .action-button:hover {
             background: #24394A;
             transform: translateY(-2px);
-        }
-        
-        .action-panel {
-            background: #f5f7fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-            display: none;
-        }
-        
-        .action-panel ul {
-            padding-left: 20px;
-            margin: 10px 0;
         }
         
         @keyframes fadeIn {
@@ -190,7 +191,7 @@
         
         @media (max-width: 600px) {
             .values-grid {
-                grid-template-columns: repeat(4, 1fr);
+                grid-template-columns: repeat(3, 1fr);
             }
             
             .value-letter {
@@ -208,6 +209,8 @@
             <button id="collapse-all" class="action-button">Collapse All</button>
         </div>
         
+        <div class="clickable-instruction">Click on the letters below to explore our values!</div>
+        
         <div class="values-grid">
             <div class="value-letter" data-value="r">R</div>
             <div class="value-letter" data-value="e">E</div>
@@ -222,14 +225,6 @@
         <div class="value-content" id="r-content">
             <h2 class="value-title"><span>R</span>Responsibility</h2>
             <p class="value-description">We own our actions and decisions, taking initiative to drive positive outcomes.</p>
-            <button class="action-button">How to Demonstrate</button>
-            <div class="action-panel">
-                <ul>
-                    <li>Take ownership of tasks from start to finish</li>
-                    <li>Admit mistakes and focus on solutions</li>
-                    <li>Follow through on commitments</li>
-                </ul>
-            </div>
             <h3>Dos</h3>
             <ul>
                 <li>Report at the store as per schedule.</li>
@@ -240,7 +235,7 @@
             </ul>
             <h3>Don'ts</h3>
             <ul>
-                <li>Avoid making excuses or shirking responsibility.</li>
+                <li>Avoid making excuses or escape responsibility.</li>
                 <li>Withhold information that affects the team or customers.</li>
                 <li>Ignore behaviors and actions that negatively impact partners, customers, and business.</li>
                 <li>Waste resources (water, electricity, packaging material, etc.).</li>
@@ -251,14 +246,6 @@
         <div class="value-content" id="e-content">
             <h2 class="value-title"><span>E</span>Empathy</h2>
             <p class="value-description">We seek to understand others' perspectives.</p>
-            <button class="action-button">How to Demonstrate</button>
-            <div class="action-panel">
-                <ul>
-                    <li>Practice active listening</li>
-                    <li>Ask open-ended questions</li>
-                    <li>Consider different perspectives</li>
-                </ul>
-            </div>
             <h3>Dos</h3>
             <ul>
                 <li>Welcome every team member warmly.</li>
@@ -281,14 +268,6 @@
         <div class="value-content" id="s-content">
             <h2 class="value-title"><span>S</span>Service Excellence</h2>
             <p class="value-description">We deliver outstanding experiences, setting high standards, and continuously improving to exceed expectations.</p>
-            <button class="action-button">How to Demonstrate</button>
-            <div class="action-panel">
-                <ul>
-                    <li>Engage with customers and gather feedback.</li>
-                    <li>Remember customer names and their preferred drinks.</li>
-                    <li>Maintain efficiency at the station and stay hospitable.</li>
-                </ul>
-            </div>
             <h3>Dos</h3>
             <ul>
                 <li>Engage with customers and gather feedback.</li>
@@ -309,15 +288,7 @@
         <!-- P - Performance with Purpose -->
         <div class="value-content" id="p-content">
             <h2 class="value-title"><span>P</span>Performance with Purpose</h2>
-            <p class="value-description">We maintain a culture of high standards and meritocracy, focusing on continuous growth and ethical leadership.</p>
-            <button class="action-button">How to Demonstrate</button>
-            <div class="action-panel">
-                <ul>
-                    <li>Complete assigned tasks efficiently and timely.</li>
-                    <li>Demonstrate excellent suggestive and upselling skills.</li>
-                    <li>Focus on delivering results by following standards and policies.</li>
-                </ul>
-            </div>
+            <p class="value-description">We maintain a culture of high standards and Ability-based system, focusing on continuous growth and ethical leadership.</p>
             <h3>Dos</h3>
             <ul>
                 <li>Complete assigned tasks efficiently and timely.</li>
@@ -340,14 +311,6 @@
         <div class="value-content" id="e2-content">
             <h2 class="value-title"><span>E</span>Ethics & Integrity</h2>
             <p class="value-description">We build trust through honesty, transparency, and ethical decision-making.</p>
-            <button class="action-button">How to Demonstrate</button>
-            <div class="action-panel">
-                <ul>
-                    <li>Provide equal opportunities for all employees to grow.</li>
-                    <li>Keep confidential information secure and share only necessary information.</li>
-                    <li>Abide by the law and ask if unsure.</li>
-                </ul>
-            </div>
             <h3>Dos</h3>
             <ul>
                 <li>Provide equal opportunities for all employees to grow.</li>
@@ -359,7 +322,7 @@
             <h3>Don'ts</h3>
             <ul>
                 <li>Engage in unlawful activities (e.g., consuming drugs, alcohol, tobacco at the workplace).</li>
-                <li>Accept gifts from vendors and customers worth more than Rs. 500.</li>
+                <li>Accept gifts from vendors and customers.</li>
                 <li>Take unauthorized benefits (e.g., giving employee meal/discount benefits to friends or customers).</li>
                 <li>Manipulate or hide information (e.g., reporting incorrect inventories).</li>
                 <li>Submit fraudulent claims (e.g., forging attendance, overtime, bonus).</li>
@@ -370,14 +333,6 @@
         <div class="value-content" id="c-content">
             <h2 class="value-title"><span>C</span>Collaboration</h2>
             <p class="value-description">We value diverse contributions, strengthen partnerships, and create a culture of teamwork and shared success.</p>
-            <button class="action-button">How to Demonstrate</button>
-            <div class="action-panel">
-                <ul>
-                    <li>Work as a team and ask for help when needed.</li>
-                    <li>Recognize and promote team efforts.</li>
-                    <li>Build strong relationships with new and existing team members.</li>
-                </ul>
-            </div>
             <h3>Dos</h3>
             <ul>
                 <li>Work as a team and ask for help when needed.</li>
@@ -400,14 +355,6 @@
         <div class="value-content" id="t-content">
             <h2 class="value-title"><span>T</span>Trust</h2>
             <p class="value-description">We cultivate trust through fairness, honesty, and clear communication.</p>
-            <button class="action-button">How to Demonstrate</button>
-            <div class="action-panel">
-                <ul>
-                    <li>Communicate openly, clearly, and honestly.</li>
-                    <li>Treat colleagues and customers fairly and with respect.</li>
-                    <li>Align actions with customer trust and loyalty.</li>
-                </ul>
-            </div>
             <h3>Dos</h3>
             <ul>
                 <li>Communicate openly, clearly, and honestly.</li>
@@ -431,7 +378,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             const letters = document.querySelectorAll('.value-letter');
             const contents = document.querySelectorAll('.value-content');
-            const buttons = document.querySelectorAll('.action-button');
             const collapseAllButton = document.getElementById('collapse-all');
             
             // Handle letter clicks
@@ -455,26 +401,10 @@
                 });
             });
             
-            // Handle action buttons
-            buttons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const panel = button.nextElementSibling;
-                    panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-                    button.textContent = panel.style.display === 'block' 
-                        ? 'Hide Suggestions' 
-                        : 'How to Demonstrate';
-                });
-            });
-            
             // Collapse all content
             collapseAllButton.addEventListener('click', () => {
                 contents.forEach(c => c.classList.remove('active'));
                 letters.forEach(l => l.classList.remove('active'));
-                buttons.forEach(button => {
-                    const panel = button.nextElementSibling;
-                    panel.style.display = 'none';
-                    button.textContent = 'How to Demonstrate';
-                });
             });
             
             // Collapse the first content initially
