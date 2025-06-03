@@ -22,7 +22,7 @@ const qp=k=>new URL(location).searchParams.get(k)||"";
 const empID = qp("emp") || qp("id") || qp("empid") || qp("code") || "000001";
 
 const fullName = decodeURIComponent(qp("name") || "Employee Name");
-const certNo   = "twcfs-" + empID.toLowerCase();
+const certNo   = "TWCFS-" + empID.toLowerCase();
 const today    = new Date().toLocaleDateString('en-GB').replace(/\//g,"/");
 
 document.getElementById('btn').onclick = () => {
