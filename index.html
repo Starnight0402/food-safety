@@ -1,416 +1,50 @@
-<!DOCTYPE html>
+
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Third Wave Coffee - R.E.S.P.E.C.T. Values</title>
-    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --r-color: #2E7D32; /* Green */
-            --e-color: #1565C0; /* Blue */
-            --s-color: #6A1B9A; /* Purple */
-            --p-color: #C62828; /* Red */
-            --e2-color: #0277BD; /* Dark Blue */
-            --c-color: #EF6C00; /* Orange */
-            --t-color: #00838F; /* Teal */
-            --light-bg: #f9f9f9;
-            --text-color: #333;
-        }
-        
-        body {
-            font-family: 'Lato', sans-serif;
-            background-color: var(--light-bg);
-            margin: 0;
-            padding: 20px;
-            color: var(--text-color);
-        }
-        
-        .card {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #24394A 0%, #3A6EA5 100%);
-            padding: 30px 20px;
-            text-align: center;
-            color: white;
-            position: relative;
-        }
-        
-        .header::after {
-            content: '';
-            position: absolute;
-            bottom: -15px;
-            left: 0;
-            right: 0;
-            height: 30px;
-            background: white;
-            transform: skewY(-2deg);
-        }
-        
-        .company-name {
-            font-weight: 900;
-            font-size: 24px;
-            letter-spacing: 2px;
-            margin: 0 0 15px 0;
-            text-transform: uppercase;
-        }
-
-        .clickable-instruction {
-            font-size: 16px;
-            margin: 20px 0;
-            text-align: center;
-            color: var(--text-color);
-            font-weight: 700;
-        }
-        
-        .values-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            padding: 30px 20px;
-        }
-        
-        .value-letter {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: 800;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid;
-            background: white;
-            position: relative;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Individual letter colors */
-        .value-letter[data-value="r"] { color: var(--r-color); border-color: var(--r-color); }
-        .value-letter[data-value="e"] { color: var(--e-color); border-color: var(--e-color); }
-        .value-letter[data-value="s"] { color: var(--s-color); border-color: var(--s-color); }
-        .value-letter[data-value="p"] { color: var(--p-color); border-color: var(--p-color); }
-        .value-letter[data-value="e2"] { color: var(--e2-color); border-color: var(--e2-color); }
-        .value-letter[data-value="c"] { color: var(--c-color); border-color: var(--c-color); }
-        .value-letter[data-value="t"] { color: var(--t-color); border-color: var(--t-color); }
-        
-        .value-letter:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-            background: rgba(0, 0, 0, 0.05);
-        }
-        
-        .value-letter.active {
-            color: white !important;
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-        }
-        
-        .value-letter[data-value="r"].active { background: var(--r-color); }
-        .value-letter[data-value="e"].active { background: var(--e-color); }
-        .value-letter[data-value="s"].active { background: var(--s-color); }
-        .value-letter[data-value="p"].active { background: var(--p-color); }
-        .value-letter[data-value="e2"].active { background: var(--e2-color); }
-        .value-letter[data-value="c"].active { background: var(--c-color); }
-        .value-letter[data-value="t"].active { background: var(--t-color); }
-        
-        .value-content {
-            padding: 0 20px 30px;
-            display: none;
-        }
-        
-        .value-content.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        .value-title {
-            font-size: 24px;
-            margin: 0 0 15px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .value-title span {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 900;
-        }
-        
-        #r-content .value-title span { background: var(--r-color); }
-        #e-content .value-title span { background: var(--e-color); }
-        #s-content .value-title span { background: var(--s-color); }
-        #p-content .value-title span { background: var(--p-color); }
-        #e2-content .value-title span { background: var(--e2-color); }
-        #c-content .value-title span { background: var(--c-color); }
-        #t-content .value-title span { background: var(--t-color); }
-        
-        .value-description {
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-        
-        .action-button {
-            background: #3A6EA5;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-family: 'Lato';
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: block;
-            margin: 10px 0;
-            width: 100%;
-        }
-        
-        .action-button:hover {
-            background: #24394A;
-            transform: translateY(-2px);
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @media (max-width: 600px) {
-            .values-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            
-            .value-letter {
-                font-size: 20px;
-            }
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TWC Certificate</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+ body{font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;height:100vh;margin:0;background:#fafafa}
+ button{padding:12px 24px;background:#1f4e79;border:none;border-radius:6px;
+        color:#fff;font-size:1rem;cursor:pointer}
+ canvas{display:none}
+</style>
 </head>
 <body>
-    <div class="card">
-        <div class="header">
-            <div class="company-name">THIRD WAVE COFFEE</div>
-            <h1>RESPECT</h1>
-            <p>Our Core Values Interactive Explorer</p>
-            <button id="collapse-all" class="action-button">Collapse All</button>
-        </div>
-        
-        <div class="clickable-instruction">Click on the letters below to explore our values!</div>
-        
-        <div class="values-grid">
-            <div class="value-letter" data-value="r">R</div>
-            <div class="value-letter" data-value="e">E</div>
-            <div class="value-letter" data-value="s">S</div>
-            <div class="value-letter" data-value="p">P</div>
-            <div class="value-letter" data-value="e2">E</div>
-            <div class="value-letter" data-value="c">C</div>
-            <div class="value-letter" data-value="t">T</div>
-        </div>
-        
-        <!-- R - Responsibility -->
-        <div class="value-content" id="r-content">
-            <h2 class="value-title"><span>R</span>Responsibility</h2>
-            <p class="value-description">We own our actions and decisions, taking initiative to drive positive outcomes.</p>
-            <h3>Dos</h3>
-            <ul>
-                <li>Report at the store as per schedule.</li>
-                <li>Follow grooming standards.</li>
-                <li>Maintain personal hygiene and follow CAYG while working on stations.</li>
-                <li>Prepare and serve products as per recipe and TWC standards.</li>
-                <li>Take personal accountability for the experience of customers and partners.</li>
-            </ul>
-            <h3>Don'ts</h3>
-            <ul>
-                <li>Avoid making excuses or escape responsibility.</li>
-                <li>Withhold information that affects the team or customers.</li>
-                <li>Ignore behaviors and actions that negatively impact partners, customers, and business.</li>
-                <li>Waste resources (water, electricity, packaging material, etc.).</li>
-            </ul>
-        </div>
-        
-        <!-- E - Empathy -->
-        <div class="value-content" id="e-content">
-            <h2 class="value-title"><span>E</span>Empathy</h2>
-            <p class="value-description">We seek to understand others' perspectives.</p>
-            <h3>Dos</h3>
-            <ul>
-                <li>Welcome every team member warmly.</li>
-                <li>Help customers who may struggle (e.g., opening doors, finding seats).</li>
-                <li>Approach upset or unhappy customers with care.</li>
-                <li>Teach skills patiently to new team members.</li>
-                <li>Accept feedback openly, even from peers or juniors.</li>
-            </ul>
-            <h3>Don'ts</h3>
-            <ul>
-                <li>Judge others.</li>
-                <li>Be egoistic or uncomfortable receiving feedback.</li>
-                <li>Ignore burnout signs like, Always feeling tired, No interest in work, Easily annoyed, etc.</li>
-                <li>Dismiss feedback.</li>
-                <li>Be unapproachable.</li>
-            </ul>
-        </div>
-        
-        <!-- S - Service Excellence -->
-        <div class="value-content" id="s-content">
-            <h2 class="value-title"><span>S</span>Service Excellence</h2>
-            <p class="value-description">We deliver outstanding experiences, setting high standards, and continuously improving to exceed expectations.</p>
-            <h3>Dos</h3>
-            <ul>
-                <li>Engage with customers and gather feedback.</li>
-                <li>Remember customer names and their preferred drinks.</li>
-                <li>Maintain efficiency at the station and stay hospitable.</li>
-                <li>Adhere to standards and recipes, even during peak hours.</li>
-                <li>Handle difficult or unhappy customers calmly and respectfully.</li>
-            </ul>
-            <h3>Don'ts</h3>
-            <ul>
-                <li>Prioritize controlling expenses at the cost of customer experience.</li>
-                <li>Ignore customer concerns or special requests.</li>
-                <li>Assume customers are seeking free products.</li>
-                <li>Prioritize operational tasks over customers.</li>
-            </ul>
-        </div>
-        
-        <!-- P - Performance with Purpose -->
-        <div class="value-content" id="p-content">
-            <h2 class="value-title"><span>P</span>Performance with Purpose</h2>
-            <p class="value-description">We maintain a culture of high standards and Ability-based system, focusing on continuous growth and ethical leadership.</p>
-            <h3>Dos</h3>
-            <ul>
-                <li>Complete assigned tasks efficiently and timely.</li>
-                <li>Demonstrate excellent suggestive and upselling skills.</li>
-                <li>Focus on delivering results by following standards and policies.</li>
-                <li>Stay curious and eager to learn new skills.</li>
-                <li>Communicate effectively and set clear expectations.</li>
-            </ul>
-            <h3>Don'ts</h3>
-            <ul>
-                <li>Approach aggressively and demand results.</li>
-                <li>Perceive tasks as a burden or ignore assigned tasks.</li>
-                <li>Withhold financial goals from the team.</li>
-                <li>Be rigid and resist new ways of doing things.</li>
-                <li>Discriminate based on caste, color, sex, or ethnicity.</li>
-            </ul>
-        </div>
-        
-        <!-- E - Ethics & Integrity -->
-        <div class="value-content" id="e2-content">
-            <h2 class="value-title"><span>E</span>Ethics & Integrity</h2>
-            <p class="value-description">We build trust through honesty, transparency, and ethical decision-making.</p>
-            <h3>Dos</h3>
-            <ul>
-                <li>Provide equal opportunities for all employees to grow.</li>
-                <li>Keep confidential information secure and share only necessary information.</li>
-                <li>Abide by the law and ask if unsure.</li>
-                <li>Share company information with authorized persons.</li>
-                <li>Observe and report any mishappenings in the store.</li>
-            </ul>
-            <h3>Don'ts</h3>
-            <ul>
-                <li>Engage in unlawful activities (e.g., consuming drugs, alcohol, tobacco at the workplace).</li>
-                <li>Accept gifts from vendors and customers.</li>
-                <li>Take unauthorized benefits (e.g., giving employee meal/discount benefits to friends or customers).</li>
-                <li>Manipulate or hide information (e.g., reporting incorrect inventories).</li>
-                <li>Submit fraudulent claims (e.g., forging attendance, overtime, bonus).</li>
-            </ul>
-        </div>
-        
-        <!-- C - Collaboration with Recognition -->
-        <div class="value-content" id="c-content">
-            <h2 class="value-title"><span>C</span>Collaboration with Recognition</h2>
-            <p class="value-description">We value diverse contributions, strengthen partnerships, and create a culture of teamwork and shared success.</p>
-            <h3>Dos</h3>
-            <ul>
-                <li>Work as a team and ask for help when needed.</li>
-                <li>Recognize and promote team efforts.</li>
-                <li>Build strong relationships with new and existing team members.</li>
-                <li>Involve the team in solving problems and achieving goals.</li>
-                <li>Create a positive work environment through regular meetings and feedback.</li>
-            </ul>
-            <h3>Don'ts</h3>
-            <ul>
-                <li>Blame others for failures or mistakes.</li>
-                <li>Undermine anyone's role or contribution.</li>
-                <li>Take credit for team efforts without acknowledging everyone.</li>
-                <li>Dismiss ideas or suggestions.</li>
-                <li>Engage in unhealthy competition that disrupts team harmony.</li>
-            </ul>
-        </div>
-        
-        <!-- T - Trust -->
-        <div class="value-content" id="t-content">
-            <h2 class="value-title"><span>T</span>Trust</h2>
-            <p class="value-description">We cultivate trust through fairness, honesty, and clear communication.</p>
-            <h3>Dos</h3>
-            <ul>
-                <li>Communicate openly, clearly, and honestly.</li>
-                <li>Treat colleagues and customers fairly and with respect.</li>
-                <li>Align actions with customer trust and loyalty.</li>
-                <li>Honor commitments and fulfill promises.</li>
-                <li>Handle issues and concerns transparently.</li>
-            </ul>
-            <h3>Don'ts</h3>
-            <ul>
-                <li>Make false promises or break commitments.</li>
-                <li>Prioritize short-term gains over long-term customer relationships.</li>
-                <li>Mislead or provide incomplete information.</li>
-                <li>Ignore ethical concerns or tolerate dishonesty.</li>
-                <li>Engage in favoritism or unfair treatment.</li>
-            </ul>
-        </div>
-    </div>
+<button id="btn">Download Certificate</button>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+const qp=k=>new URL(location).searchParams.get(k)||"";
+const fullName=decodeURIComponent(qp("name")||"Employee Name");
+const empID=qp("id")||"000001";
+const certNo="twcfs-"+empID.toLowerCase();
+const today=new Date().toLocaleDateString('en-GB').replace(/\//g,"/");
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const letters = document.querySelectorAll('.value-letter');
-            const contents = document.querySelectorAll('.value-content');
-            const collapseAllButton = document.getElementById('collapse-all');
-            
-            // Handle letter clicks
-            letters.forEach(letter => {
-                letter.addEventListener('click', () => {
-                    // Remove all active states
-                    letters.forEach(l => l.classList.remove('active'));
-                    contents.forEach(c => c.classList.remove('active'));
-                    
-                    // Set active state
-                    letter.classList.add('active');
-                    const target = letter.getAttribute('data-value');
-                    const content = document.getElementById(`${target}-content`);
-                    
-                    // Toggle content visibility
-                    if (content.classList.contains('active')) {
-                        content.classList.remove('active');
-                    } else {
-                        content.classList.add('active');
-                    }
-                });
-            });
-            
-            // Collapse all content
-            collapseAllButton.addEventListener('click', () => {
-                contents.forEach(c => c.classList.remove('active'));
-                letters.forEach(l => l.classList.remove('active'));
-            });
-            
-            // Collapse the first content initially
-            contents.forEach(c => c.classList.remove('active'));
-            letters[0].click(); // Activate first letter by default
-        });
-    </script>
+document.getElementById('btn').onclick=()=>{
+  const cv=document.getElementById('c'),ctx=cv.getContext('2d'),img=new Image();
+  img.src='certificate.png';           /* external image */
+  img.onload=()=>{
+    ctx.drawImage(img,0,0,cv.width,cv.height);
+
+    ctx.fillStyle="#000";
+    ctx.font="bold 42px Arial"; ctx.textAlign="center"; ctx.fillText(fullName,960,490);
+
+    ctx.font="bold 32px Arial"; ctx.textAlign="center";
+    ctx.fillText(today ,320 ,800);
+    ctx.fillText(empID ,960 ,800);
+    ctx.fillText(certNo,1600,800);
+
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:"landscape",unit:"px",format:[1920,1080]});
+    pdf.addImage(cv.toDataURL('image/png'),'PNG',0,0,1920,1080);
+    pdf.save(fullName.replace(/\s+/g,'_')+'_Certificate.pdf');
+    const b=document.getElementById('btn'); b.disabled=true; b.textContent='Certificate downloaded';
+  };
+};
+</script>
 </body>
 </html>
