@@ -18,31 +18,36 @@
 <canvas id="c" width="1920" height="1080"></canvas>
 <script>
 const qp=k=>new URL(location).searchParams.get(k)||"";
-/* pick Emp ID from several possible param names */
+/* Flexible parameter names */
 const empID = qp("emp") || qp("id") || qp("empid") || qp("code") || "000001";
 
 const fullName = decodeURIComponent(qp("name") || "Employee Name");
 const certNo   = "twcfs-" + empID.toLowerCase();
 const today    = new Date().toLocaleDateString('en-GB').replace(/\//g,"/");
 
-document.getElementById('btn').onclick=()=>{
-  const cv=document.getElementById('c'),ctx=cv.getContext('2d'),img=new Image();
+document.getElementById('btn').onclick = () => {
+  const cv=document.getElementById('c'), ctx=cv.getContext('2d'), img=new Image();
   img.src='certificate.png';
-  img.onload=()=>{
+  img.onload = () => {
     ctx.drawImage(img,0,0,cv.width,cv.height);
+
     ctx.fillStyle="#000";
-    ctx.font="bold 42px Arial"; ctx.textAlign="center"; ctx.fillText(fullName,960,490);
-    ctx.font="bold 32px Arial"; ctx.textAlign="center";
-    ctx.fillText(today ,350 ,800);
-    ctx.fillText(empID ,960 ,800);
-    ctx.fillText(certNo,1550,800);
+    ctx.font="bold 42px Arial";
+    ctx.textAlign="center";
+    ctx.fillText(fullName, 960, 490);   // Name
+
+    ctx.font="bold 32px Arial";
+    ctx.fillText(today , 370 , 800);    // Date
+    ctx.fillText(empID , 960 , 800);    // Emp ID
+    ctx.fillText(certNo, 1540, 800);    // Cert No
 
     const {jsPDF}=window.jspdf;
-    const pdf=new jsPDF({orientation:"landscape",unit:"px",format:[1920,1080]});
-    pdf.addImage(cv.toDataURL('image/png'),'PNG',0,0,1920,1080);
-    pdf.save(fullName.replace(/\s+/g,'_')+'_Certificate.pdf');
-    document.getElementById('btn').disabled=true;
-    document.getElementById('btn').textContent='Certificate downloaded';
+    const pdf = new jsPDF({orientation:"landscape", unit:"px", format:[1920,1080]});
+    pdf.addImage(cv.toDataURL('image/png'), 'PNG', 0,0,1920,1080);
+    pdf.save(fullName.replace(/\s+/g,'_') + '_Certificate.pdf');
+    const b=document.getElementById('btn');
+    b.disabled = true;
+    b.textContent = "Certificate downloaded";
   };
 };
 </script>
