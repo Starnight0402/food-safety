@@ -1,51 +1,881 @@
-
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TWC Certificate</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<style>
- body{font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;
-      align-items:center;justify-content:center;height:100vh;margin:0;background:#fafafa}
- button{padding:12px 24px;background:#1f4e79;border:none;border-radius:6px;
-        color:#fff;font-size:1rem;cursor:pointer}
- canvas{display:none}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brew League Score Sheet</title>
+  <meta name="description" content="Audit checklist for training at Third Wave Coffee." />
+  <meta name="theme-color" content="#f8fafc" />
+  <link rel="icon" href="/favicon.ico" />
+  <meta property="og:title" content="Brew League Score Sheet" />
+  <meta property="og:description" content="Audit checklist for training at Third Wave Coffee." />
+  <meta property="og:type" content="website" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+  <style>
+    .fade-in { opacity: 0; animation: fadeIn 0.6s forwards; }
+    @keyframes fadeIn { to { opacity: 1; } }
+    /* Material You inspired pastel backgrounds and elevation */
+    .report-box {
+      border-radius: 1.5rem;
+      background: #f5f7fa;
+      border: 2px solid #e3e8f2;
+      box-shadow: 0 4px 16px #e3e8f299;
+      transition: box-shadow 0.2s;
+    }
+    .report-box:focus-within, .report-box:hover {
+      box-shadow: 0 8px 24px #c7d2fe99;
+      border-color: #c7d2fe;
+    }
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      text-align: center;
+      margin: 0;
+      padding: 12px 0 10px 0;
+      color: #2563eb;
+      letter-spacing: 0.01em;
+    }
+    .autotable-header {
+      color: #23272f !important;
+      background: #e3e8f2 !important;
+      font-weight: bold !important;
+      font-size: 11px !important;
+      text-align: center !important;
+    }
+  </style>
 </head>
-<body>
-<button id="btn">Download Certificate</button>
-<canvas id="c" width="1920" height="1080"></canvas>
-<script>
-const qp=k=>new URL(location).searchParams.get(k)||"";
-/* Accept emp, id, empid, code */
-const empID = (qp("emp") || qp("id") || qp("empid") || qp("code") || "000001").toUpperCase();
+<body class="bg-gray-100">
+  <div id="root" style="display:none"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    // Robust URL parameter extraction
+    function getParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      const val = params.get(name);
+      return val ? decodeURIComponent(val.replace(/\+/g, ' ')) : '';
+    }
+    const judgeName = getParam('judgeName') || getParam('name') || '';
+    const judgeId   = getParam('judgeId') || getParam('id') || '';
+    const LOG_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx_6IAxc8u-hEZDfHq_e1vPGBRS1CPx5TlWzaArHf20KoGRnueFrlF-wVOdF1VDpf5S/exec';
+    const safeVibrate = pattern => { if(navigator?.vibrate) navigator.vibrate(pattern); };
+    const safeLS = { get:k=>{try{return localStorage.getItem(k)}catch{return null}}, set:(k,v)=>{try{localStorage.setItem(k,v)}catch{}}, clear:()=>{try{localStorage.clear()}catch{}} };
+    // Checklist Data & Scoring (UPDATED)
+    const SECTIONS = [
+      // Grooming & Hygiene
+      {
+        id: 'GroomingHygiene',
+        title: 'Grooming & Hygiene',
+        items: [
+          { id: 'SanitizedHands', q: 'Has the barista sanitized their hands', w: 1 },
+          { id: 'ApronClean', q: 'Is the barista apron free from stains and damage', w: 1 },
+          { id: 'NameTag', q: 'Is the barista wearing a name tag', w: 1 },
+          { id: 'FormalPants', q: 'Is the barista wearing black formal pants', w: 1 },
+          { id: 'BlackShoes', q: 'Is the barista wearing black shoes', w: 1 },
+          { id: 'GroomingStandards', q: 'Barista following the grooming standards (Beard/Hair/Make-up) Male and female', w: 2 },
+          { id: 'NailsTrimmed', q: 'Is the baristas nails trimmed', w: 1 },
+          { id: 'JewelryPermitted', q: 'Only permitted jewelry worn', w: 1 }
+        ]
+      },
+      // Espresso (Dial-In)
+      {
+        id: 'EspressoDialIn',
+        title: 'Espresso (Dial-In)',
+        items: [
+          { id: 'Shot0', q: 'Shot extracted to check the recipe', w: 0 },
+          { id: 'DialInStartTime', q: 'Dial-In Start time:', w: 0 }
+        ]
+      },
+      // Espresso (Dial-In) Shot 1
+      {
+        id: 'EspressoDialInShot1',
+        title: 'Espresso (Dial-In) Shot 1',
+        items: [
+          { id: 'GrindChange', q: 'Is the barista able to change the grind size based on under/over extracted shot', w: 5 },
+          { id: 'ExplainDialIn', q: 'Is the barista able to explain the dial-in process', w: 3 },
+          { id: 'WasteDose', q: 'Did the barista waste a dose after changing the grind size every time', w: 3 },
+          { id: 'CheckWeight', q: 'Did the barista check the weight of the ground coffee after changing the grind size', w: 2 },
+          { id: 'GrindingTime', q: 'Is the barista able to set the grinding time to dispense the right amount for dose', w: 2 },
+          { id: 'GrinderCleaned', q: 'Area around the grinder cleaned with brush to clear out grounds', w: 2 },
+          { id: 'PortaFilterDry', q: 'Porta filter wiped with dry grey cloth', w: 2 },
+          { id: 'BasketFreeGrounds', q: 'Porta filter basket free from brewed coffee gounds', w: 2 },
+          { id: 'RightBasket', q: 'Right basket porta filter used for intended shot', w: 2 },
+          { id: 'RightGrammage', q: 'Right grammage of ground coffee taken', w: 2 },
+          { id: 'CoffeeLevelled', q: 'Coffee grounds levelled using tap/chop method before tamping', w: 3 },
+          { id: 'TampingMachine', q: 'Tamping machine set as per standard', w: 2 },
+          { id: 'PortaFilterRim', q: 'Porta filter rim wiped to clear loose coffee grounds before inserting into group head', w: 2 },
+          { id: 'FlushGrouphead', q: 'Barista Flushes the grouphead befor insert', w: 3 },
+          { id: 'DripTrayWiped', q: 'Drip tray wiped with the right green cloth after flushing', w: 2 },
+          { id: 'PortaFilterSmooth', q: 'Porta filter inserted into group head smoothly without knocking', w: 3 },
+          { id: 'ExtractionButton', q: 'Right extraction button pressed within 3 seconds of inserting the porta filter', w: 3 },
+          { id: 'FlowEvenly', q: 'Did the espresso flow evenly from both the spouts', w: 3 },
+          { id: 'ShotBrewTime', q: 'Was the shot extracted within the brew time', w: 5 },
+          { id: 'ShotYield', q: 'Was the shot extracted within the  yield  (+/- 1 g )', w: 5 }
+        ]
+      },
+      // Espresso (Dial-In) Shot 2
+      {
+        id: 'EspressoDialInShot2',
+        title: 'Espresso (Dial-In) Shot -2',
+        items: [
+          { id: 'GrindChange', q: 'Is the barista able to change the grind size based on under/over extracted shot', w: 5 },
+          { id: 'ExplainDialIn', q: 'Is the barista able to explain the dial-in process', w: 3 },
+          { id: 'WasteDose', q: 'Did the barista waste a dose after changing the grind size every time', w: 3 },
+          { id: 'CheckWeight', q: 'Did the barista check the weight of the ground coffee after changing the grind size', w: 2 },
+          { id: 'GrindingTime', q: 'Is the barista able to set the grinding time to dispense the right amount for dose', w: 2 },
+          { id: 'GrinderCleaned', q: 'Area around the grinder cleaned with brush to clear out grounds', w: 2 },
+          { id: 'PortaFilterDry', q: 'Porta filter wiped with dry grey cloth', w: 2 },
+          { id: 'BasketFreeGrounds', q: 'Porta filter basket free from brewed coffee gounds', w: 2 },
+          { id: 'RightBasket', q: 'Right basket porta filter used for intended shot', w: 2 },
+          { id: 'RightGrammage', q: 'Right grammage of ground coffee taken', w: 2 },
+          { id: 'CoffeeLevelled', q: 'Coffee grounds levelled using tap/chop method before tamping', w: 3 },
+          { id: 'TampingMachine', q: 'Tamping machine set as per standard', w: 2 },
+          { id: 'PortaFilterRim', q: 'Porta filter rim wiped to clear loose coffee grounds before inserting into group head', w: 2 },
+          { id: 'FlushGrouphead', q: 'Barista Flushes the grouphead befor insert', w: 3 },
+          { id: 'DripTrayWiped', q: 'Drip tray wiped with the right green cloth after flushing', w: 2 },
+          { id: 'PortaFilterSmooth', q: 'Porta filter inserted into group head smoothly without knocking', w: 3 },
+          { id: 'ExtractionButton', q: 'Right extraction button pressed within 3 seconds of inserting the porta filter', w: 3 },
+          { id: 'FlowEvenly', q: 'Did the espresso flow evenly from both the spouts', w: 3 },
+          { id: 'ShotBrewTime', q: 'Was the shot extracted within the brew time', w: 5 },
+          { id: 'ShotYield', q: 'Was the shot extracted within the  yield  (+/- 1 g )', w: 5 }
+        ]
+      },
+      {
+        id: 'DialInEndTime',
+        title: '',
+        items: [
+          { id: 'DialInEndTime', q: 'Dial-In End time:', w: 0 }
+        ]
+      },
+      // Milk Based Beverages
+      {
+        id: 'MilkBasedBeverages',
+        title: 'Milk Based Beverages',
+        items: [
+          { id: 'BeverageName', q: 'Mention the name of the beverage that is asked to be prepared.', w: 0 },
+          { id: 'StartTime', q: 'Start time:', w: 0 }
+        ]
+      },
+      // Milk Based Beverages Cup-1
+      {
+        id: 'MilkCup1',
+        title: 'Milk Based Beverages  Cup-1',
+        items: [
+          { id: 'Cup1PreWarmed', q: 'Is the cup pre-warmed before extraction', w: 2 },
+          { id: 'Cup1DryCloth', q: 'Porta filter wiped with dry grey cloth', w: 2 },
+          { id: 'Cup1BasketFree', q: 'Porta filter basket free from brewed coffee gounds', w: 2 },
+          { id: 'Cup1RightBasket', q: 'Right basket porta filter used for intended shot', w: 2 },
+          { id: 'Cup1Grammage', q: 'Right grammage of ground coffee taken', w: 2 },
+          { id: 'Cup1Levelled', q: 'Coffee grounds levelled using tap/chop method before tamping', w: 3 },
+          { id: 'Cup1TampingMachine', q: 'Tamping machine set as per standard', w: 2 },
+          { id: 'Cup1RimWiped', q: 'Porta filter rim wiped to clear loose coffee grounds before inserting into group head', w: 2 },
+          { id: 'Cup1FlushGrouphead', q: 'Barista Flushes the grouphead befor insert', w: 3 },
+          { id: 'Cup1DripTray', q: 'Drip tray wiped with the right green cloth after flushing', w: 2 },
+          { id: 'Cup1SmoothInsert', q: 'Porta filter inserted into group head smoothly without knocking', w: 3 },
+          { id: 'Cup1ExtractionButton', q: 'Right extraction button pressed within 3 seconds of inserting the porta filter', w: 3 },
+          { id: 'Cup1FlowEvenly', q: 'Did the espresso flow evenly from both the spouts', w: 3 },
+          { id: 'Cup1BrewTime', q: 'Was the shot extracted within the brew time', w: 5 },
+          { id: 'Cup1Yield', q: 'Was the shot extracted within the  yield  (+/- 1 g )', w: 5 }
+        ]
+      },
+      // Cup-1 Steaming
+      {
+        id: 'Cup1Steaming',
+        title: 'Cup-1 Steaming',
+        items: [
+          { id: 'SteamingExplain', q: 'Is the barista able to explain the milk steaming process', w: 2 },
+          { id: 'SteamingPurged', q: 'Steaming wand is purged before use', w: 3 },
+          { id: 'CleanPitcher', q: 'Is the Barista uses a clean milk pitcher for every order', w: 2 },
+          { id: 'RightPitcher', q: 'Is the barista using the right milk pitcher for the intended beverage size', w: 3 },
+          { id: 'ColdMilk', q: 'In the barista using cold milk  stored in the chiller', w: 3 },
+          { id: 'MilkPouch', q: 'Is the milk pouch stored in the 900ml pitcher', w: 1 },
+          { id: 'RightMilkAmount', q: 'Is the barista taking the right amount of milk for the intended beverage size', w: 3 },
+          { id: 'FoamConsistency', q: 'Is the barista able to create the right consistency of foam for a latte/ Cappuccino/Flat white', w: 3 },
+          { id: 'SteamingWiped', q: 'Steaming wand is  wiped & purged after use', w: 3 },
+          { id: 'GreenClothSteam', q: 'Did the barista use the right green cloth to wipe the steam wand', w: 3 },
+          { id: 'GreenClothStored', q: 'Did the barista store the green cloth in the GN pan after use', w: 2 }
+        ]
+      },
+      // Cup-1 Pouring
+      {
+        id: 'Cup1Pouring',
+        title: 'Cup-1 pouring',
+        items: [
+          { id: 'TapPitcher', q: 'Does the barista tap the pitcher to remove excess bubbles (if any)', w: 1 },
+          { id: 'SwirlPitcher', q: 'Did the barista swirl the pitcher to ensure the milk and foam is well mixed', w: 1 },
+          { id: 'LatteArt', q: 'Barista able to create latte art in the cup (Cappuccino- Heart , Latte- Tulip/ Rosetta , Flat white - Single dot )', w: 5 },
+          { id: 'LatteArtCenter', q: 'Is the latte art in the centre of the cup', w: 3 },
+          { id: 'ContrastCrema', q: 'is there a visible contrast between the crema and the latte art', w: 3 },
+          { id: 'LatteArtFacing', q: 'Is the latte art facing the customer with the handle on the right side', w: 3 },
+          { id: 'IdenticalArt', q: 'Did the 2 beverages presented have identical latte art', w: 5 },
+          { id: 'NoSpillage', q: 'No spillage of espresso or milk on the outer part of the cup', w: 2 },
+          { id: 'MilkWastage', q: 'Milk wastage less than 50ml', w: 3 },
+          { id: 'CleanPitcherAfter', q: 'Did the barista clean the milk pitcher after use', w: 1 }
+        ]
+      },
+      // Cup-2
+      {
+        id: 'MilkCup2',
+        title: 'Cup-2',
+        items: [
+          { id: 'Cup2PreWarmed', q: 'Is the cup pre-warmed before extraction', w: 2 },
+          { id: 'Cup2DryCloth', q: 'Porta filter wiped with dry grey cloth', w: 2 },
+          { id: 'Cup2BasketFree', q: 'Porta filter basket free from brewed coffee gounds', w: 2 },
+          { id: 'Cup2RightBasket', q: 'Right basket porta filter used for intended shot', w: 2 },
+          { id: 'Cup2Grammage', q: 'Right grammage of ground coffee taken', w: 2 },
+          { id: 'Cup2Levelled', q: 'Coffee grounds levelled using tap/chop method before tamping', w: 3 },
+          { id: 'Cup2TampingMachine', q: 'Tamping machine set as per standard', w: 2 },
+          { id: 'Cup2RimWiped', q: 'Porta filter rim wiped to clear loose coffee grounds before inserting into group head', w: 2 },
+          { id: 'Cup2FlushGrouphead', q: 'Barista Flushes the grouphead befor insert', w: 3 },
+          { id: 'Cup2DripTray', q: 'Drip tray wiped with the right green cloth after flushing', w: 2 },
+          { id: 'Cup2SmoothInsert', q: 'Porta filter inserted into group head smoothly without knocking', w: 3 },
+          { id: 'Cup2ExtractionButton', q: 'Right extraction button pressed within 3 seconds of inserting the porta filter', w: 3 },
+          { id: 'Cup2FlowEvenly', q: 'Did the espresso flow evenly from both the spouts', w: 3 },
+          { id: 'Cup2BrewTime', q: 'Was the shot extracted within the brew time', w: 5 },
+          { id: 'Cup2Yield', q: 'Was the shot extracted within the  yield  (+/- 1 g )', w: 5 }
+        ]
+      },
+      // Cup-2 Steaming
+      {
+        id: 'Cup2Steaming',
+        title: 'Cup-2 Steaming',
+        items: [
+          { id: 'SteamingExplain', q: 'Is the barista able to explain the milk steaming process', w: 2 },
+          { id: 'SteamingPurged', q: 'Steaming wand is purged before use', w: 3 },
+          { id: 'CleanPitcher', q: 'Is the Barista uses a clean milk pitcher for every order', w: 2 },
+          { id: 'RightPitcher', q: 'Is the barista using the right milk pitcher for the intended beverage size', w: 3 },
+          { id: 'ColdMilk', q: 'In the barista using cold milk  stored in the chiller', w: 3 },
+          { id: 'MilkPouch', q: 'Is the milk pouch stored in the 900ml pitcher', w: 1 },
+          { id: 'RightMilkAmount', q: 'Is the barista taking the right amount of milk for the intended beverage size', w: 3 },
+          { id: 'FoamConsistency', q: 'Is the barista able to create the right consistency of foam for a latte/ Cappuccino/Flat white', w: 3 },
+          { id: 'SteamingWiped', q: 'Steaming wand is  wiped & purged after use', w: 3 },
+          { id: 'GreenClothSteam', q: 'Did the barista use the right green cloth to wipe the steam wand', w: 3 },
+          { id: 'GreenClothStored', q: 'Did the barista store the green cloth in the GN pan after use', w: 2 }
+        ]
+      },
+      // Cup-2 Pouring
+      {
+        id: 'Cup2Pouring',
+        title: 'Cup-2 Pouring',
+        items: [
+          { id: 'TapPitcher', q: 'Does the barista tap the pitcher to remove excess bubbles (if any)', w: 1 },
+          { id: 'SwirlPitcher', q: 'Did the barista swirl the pitcher to ensure the milk and foam is well mixed', w: 1 },
+          { id: 'LatteArt', q: 'Barista able to create latte art in the cup (Cappuccino- Heart , Latte- Tulip/ Rosetta , Flat white - Single dot )', w: 5 },
+          { id: 'LatteArtCenter', q: 'Is the latte art in the centre of the cup', w: 3 },
+          { id: 'ContrastCrema', q: 'is there a visible contrast between the crema and the latte art', w: 3 },
+          { id: 'LatteArtFacing', q: 'Is the latte art facing the customer with the handle on the right side', w: 3 },
+          { id: 'NoSpillage', q: 'No spillage of espresso or milk on the outer part of the cup', w: 2 },
+          { id: 'MilkWastage', q: 'Milk wastage less than 50ml', w: 3 },
+          { id: 'CleanPitcherAfter', q: 'Did the barista clean the milk pitcher after use', w: 1 }
+        ]
+      },
+      // End time and final questions
+      {
+        id: 'EndTime',
+        title: 'Overall',
+        items: [
+          { id: 'EndTime', q: 'End time:', w: 0 },
+          { id: 'CupImage', q: 'Image of Cup 1 & 2 together', w: 0 },
+          { id: 'FoamAmount', q: 'Did the beverages presented have the right amount of foam', w: 5 },
+          { id: 'SmileInteraction', q: 'Did the barista smile and have an engaging interaction with the judge', w: 3 },
+          { id: 'CounterClean', q: 'Did the barista leave the counter clean after finishing their performance', w: 5 }
+        ]
+      }
+    ];
+    const optionColors = { yes:'green', no:'red', na:'yellow' };
+    const options = Object.entries(optionColors);
+    const colorMap = {
+      yes: {
+        selected: "bg-green-200 ring-2 ring-green-500 hover:bg-green-300",
+        base: "bg-green-100 hover:bg-green-300"
+      },
+      no: {
+        selected: "bg-red-200 ring-2 ring-red-500 hover:bg-red-300",
+        base: "bg-red-100 hover:bg-red-300"
+      },
+      na: {
+        selected: "bg-yellow-200 ring-2 ring-yellow-500 hover:bg-yellow-300",
+        base: "bg-yellow-100 hover:bg-yellow-300"
+      }
+    };
+    function App(){
+      const [resp,setResp]=useState(()=>JSON.parse(safeLS.get('resp')||'{}'));
+      const [participantName, setParticipantName] = useState(safeLS.get('participantName') || '');
+      const [participantEmpID, setParticipantEmpID] = useState(safeLS.get('participantEmpID') || '');
+      const [storeName, setStoreName] = useState(safeLS.get('storeName') || '');
+      const [storeID, setStoreID] = useState(safeLS.get('storeID') || '');
+      const [coffeeMachineName, setCoffeeMachineName] = useState(safeLS.get('coffeeMachineName') || '');
+      const [imgs,setImgs]=useState(()=>JSON.parse(safeLS.get('imgs')||'{}'));
+      const [remarks, setRemarks] = useState(() => JSON.parse(safeLS.get('remarks') || '{}')); // REMARKS
+      const [downloading,setDownloading]=useState(false);
+      const [downloaded, setDownloaded] = useState(false);
+      const [showPopup, setShowPopup] = useState(false);
+      useEffect(()=>{
+        safeLS.set('resp',JSON.stringify(resp));
+        safeLS.set('participantName',participantName);
+        safeLS.set('participantEmpID',participantEmpID);
+        safeLS.set('storeName',storeName);
+        safeLS.set('storeID',storeID);
+        safeLS.set('coffeeMachineName',coffeeMachineName);
+        safeLS.set('imgs',JSON.stringify(imgs));
+        safeLS.set('remarks', JSON.stringify(remarks)); // REMARKS
+      },[resp,participantName,participantEmpID,storeName,storeID,coffeeMachineName,imgs,remarks]); // REMARKS
+      const handleOption=(sec,it,val)=>{
+        const key=`${sec.id}_${it.id}`;
+        setResp(p=>({...p,[key]:val}));
+        if(navigator?.vibrate){
+          if(val==='yes')safeVibrate(50);
+          else if(val==='no')safeVibrate([50,50]);
+        }
+      };
+      const handleTSA=(sec,it,val)=>{
+        const key=`${sec.id}_${it.id}`;
+        setResp(p=>({...p,[key]:val}));
+        if(navigator?.vibrate) safeVibrate(50);
+      };
+      const addImages=(sec,e)=>{
+        Array.from(e.target.files).forEach(f=>{
+          EXIF.getData(f,function(){
+            const r=new FileReader();
+            r.onload=ev=>setImgs(p=>({...p,[sec.id]:[...(p[sec.id]||[]),ev.target.result]}));
+            r.readAsDataURL(f);
+          });
+        });
+        e.target.value=null;
+      };
+      const handleCaptureTime = (sec, it) => {
+        const key = `${sec.id}_${it.id}`;
+        const currentTime = new Date().toLocaleTimeString('en-GB', { hour12: false });
+        setResp((prev) => ({ ...prev, [key]: currentTime }));
+      };
+      // Track incomplete fields for UI feedback
+      const [incompleteFields, setIncompleteFields] = useState([]);
+      const checkCompletion = () => {
+        let missing = [];
+        if (!participantName.trim()) missing.push({ type: 'field', id: 'participantName', label: 'Participant Name' });
+        if (!participantEmpID.trim()) missing.push({ type: 'field', id: 'participantEmpID', label: 'Participant Emp. ID' });
+        if (!storeName.trim()) missing.push({ type: 'field', id: 'storeName', label: 'Store Name' });
+        if (!storeID.trim()) missing.push({ type: 'field', id: 'storeID', label: 'Store ID' });
+        if (!coffeeMachineName.trim()) missing.push({ type: 'field', id: 'coffeeMachineName', label: 'Name of Coffee Machine' });
+        // Make at least one Grooming & Hygiene image mandatory
+        if (!(imgs['GroomingHygiene'] && imgs['GroomingHygiene'].length > 0)) {
+          missing.push({ type: 'img', secId: 'GroomingHygiene', itId: 'GroomingHygieneImage', secTitle: 'Grooming & Hygiene', question: 'At least one Grooming & Hygiene image required' });
+        }
+        // Make at least one Cup image mandatory
+        if (!(imgs['EndTime'] && imgs['EndTime'].length > 0)) {
+          missing.push({ type: 'img', secId: 'EndTime', itId: 'CupImage', secTitle: 'Overall', question: 'At least one Cup image required' });
+        }
+        SECTIONS.forEach(sec => {
+          sec.items.forEach(it => {
+            const key = `${sec.id}_${it.id}`;
+            // Skip image checks here, handled above
+            if ((sec.id === 'EndTime' && it.id === 'CupImage') || (sec.id === 'GroomingHygiene' && it.id === 'GroomingHygieneImage')) {
+              return;
+            }
+            if (resp[key] == null) {
+              missing.push({ type: 'resp', secId: sec.id, itId: it.id, secTitle: sec.title, question: it.q });
+            }
+          });
+        });
+        return missing;
+      };
+      const allDone = checkCompletion().length === 0;
+      // SUBMIT & PDF
+      const handleSubmit=async e=>{
+        e.preventDefault();
+        const missing = checkCompletion();
+        setIncompleteFields(missing);
+        if(missing.length > 0){
+          safeVibrate([200,200]);
+          // Optionally scroll to first missing field
+          if (missing[0]) {
+            let el = null;
+            if (missing[0].type === 'field') {
+              el = document.getElementById(missing[0].id);
+            } else if (missing[0].type === 'resp' || missing[0].type === 'img') {
+              el = document.getElementById(`${missing[0].secId}-section`);
+            }
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          return;
+        }
+        setIncompleteFields([]);
+        setDownloading(true);
+        // Score calculation
+        let total=0, max=0, sectionScores={}, sectionMax={};
+        // For time fields
+        const getTime = (secId, itemId) => {
+          const sec = SECTIONS.find(s => s.id === secId);
+          if (!sec) return '';
+          const it = sec.items.find(i => i.id === itemId);
+          if (!it) return '';
+          return resp[`${secId}_${itemId}`] || '';
+        };
+        // Calculate scores
+        SECTIONS.forEach(sec=>{
+          let secTotal=0, secMax=0;
+          sec.items.forEach(it=>{
+            const key=`${sec.id}_${it.id}`,r=resp[key];
+            if(sec.id==='TSA'){const v=parseInt(r)||0; secTotal+=v; secMax+=it.w;}
+            else{
+              if(r==='yes')secTotal+=it.w;
+              else if(r==='no' && it.wneg)secTotal+=it.wneg;
+              if(r!=='na')secMax+=Math.abs(it.w);
+            }
+          });
+          sectionScores[sec.id]=secTotal;
+          sectionMax[sec.id]=secMax;
+          total+=secTotal;max+=secMax;
+        });
+        const pct = max?Math.round((total/max)*100):0;
+        const completion=new Date().toLocaleString('en-GB',{hour12:false});
+        // Get times for top summary
+        const dialInStart = getTime('EspressoDialIn', 'DialInStartTime');
+        const dialInEnd = getTime('DialInEndTime', 'DialInEndTime');
+        const milkStart = getTime('MilkBasedBeverages', 'StartTime');
+        const milkEnd = getTime('EndTime', 'EndTime');
+        // Helper to get time diff in mm:ss
+        function getTimeDiff(start, end) {
+          if (!start || !end) return '-';
+          const [sh, sm, ss] = start.split(':').map(Number);
+          const [eh, em, es] = end.split(':').map(Number);
+          if ([sh, sm, ss, eh, em, es].some(isNaN)) return '-';
+          let startSec = sh * 3600 + sm * 60 + ss;
+          let endSec = eh * 3600 + em * 60 + es;
+          let diff = endSec - startSec;
+          if (diff < 0) diff += 24 * 3600; // handle midnight wrap
+          const min = Math.floor(diff / 60);
+          const sec = diff % 60;
+          return `${min}m ${sec}s`;
+        }
+        const dialInTimeTaken = getTimeDiff(dialInStart, dialInEnd);
+        const milkTimeTaken = getTimeDiff(milkStart, milkEnd);
 
-const fullName = decodeURIComponent(qp("name") || "Employee Name");
-const certNo   = "TWCFS-" + empID;   // all caps
-const today    = new Date().toLocaleDateString('en-GB').replace(/\//g,"/");
+        // --- LOGGING TO GOOGLE SCRIPT ENDPOINT ---
+        try {
+          await fetch(LOG_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              participantName,
+              participantEmpID,
+              judgeName,
+              judgeId,
+              totalScore: total,
+              maxScore: max,
+              percent: pct,
+              sectionScores,
+              dialInTimeTaken,
+              milkTimeTaken,
+              submissionTime: completion
+            })
+          });
+        } catch (err) {
+          // Optionally handle error (e.g., show a warning, but don't block PDF)
+          console.warn('Log failed', err);
+        }
 
-document.getElementById('btn').onclick=()=>{
-  const cv=document.getElementById('c'), ctx=cv.getContext('2d'), img=new Image();
-  img.src='certificate.png';
-  img.onload=()=>{
-    ctx.drawImage(img,0,0,cv.width,cv.height);
-
-    ctx.fillStyle="#000";
-    ctx.font="bold 42px Arial"; ctx.textAlign="center"; ctx.fillText(fullName, 960, 490);
-
-    ctx.font="bold 32px Arial"; ctx.textAlign="center";
-    ctx.fillText(today , 370 , 800);
-    ctx.fillText(empID , 960 , 800);
-    ctx.fillText(certNo, 1540, 800);
-
-    const {jsPDF}=window.jspdf;
-    const pdf=new jsPDF({orientation:"landscape", unit:"px", format:[1920,1080]});
-    pdf.addImage(cv.toDataURL('image/png'), 'PNG', 0,0,1920,1080);
-    pdf.save(fullName.replace(/\s+/g,'_') + '_Certificate.pdf');
-    const b=document.getElementById('btn'); b.disabled=true; b.textContent='Certificate downloaded';
-  };
-};
-</script>
+        safeVibrate(100);
+        // PDF Generation
+        const {jsPDF}=window.jspdf;
+        const doc=new jsPDF({orientation:'portrait',unit:'mm'});
+        // HEADER
+        doc.setFontSize(20);
+        doc.setFont('helvetica','bold');
+        doc.setTextColor("#263140");
+        doc.text("Brew League Score Sheet", 105, 15, { align: "center" });
+        // Participant and Judge Details
+        doc.setFontSize(12);
+        doc.setFont('helvetica','normal');
+        doc.setTextColor("#24272e");
+        doc.text(`Participant Name: ${participantName}`, 10, 25);
+        doc.text(`Participant Emp. ID: ${participantEmpID}`, 10, 30);
+        doc.text(`Judge Name: ${judgeName}`, 10, 35);
+        doc.text(`Judge ID: ${judgeId}`, 10, 40);
+        doc.text(`Date/Time: ${completion}`, 10, 45);
+        doc.text(`Machine Name: ${coffeeMachineName}`, 10, 50);
+        doc.text(`Store Name: ${storeName}`, 10, 55);
+        doc.text(`Store ID: ${storeID}`, 10, 60);
+        // Dial-In and Milk-Based Times
+let y = 67;
+doc.setFont('helvetica','bold');
+doc.setFontSize(14);
+doc.setTextColor('#1a237e');
+doc.text(`Time taken for espresso: ${dialInTimeTaken}`, 105, y, {align: 'center'});
+y += 8;
+doc.text(`Time taken for milk based: ${milkTimeTaken}`, 105, y, {align: 'center'});
+y += 8;
+        // Score and Percentage (bold and prominent)
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(15);
+        doc.setTextColor('#00695c');
+        doc.text(`Score: ${total} / ${max}   (${pct}%)`, 105, y, { align: 'center' });
+        y += 10;
+        // Section Details
+        const sectionBg = [
+          "#E3F6FC",
+          "#FEF6E4",
+          "#E4F7EE",
+          "#FFF1F6",
+          "#F1F2FB",
+          "#FFF5DA",
+          "#F8F9F9",
+          "#F5F6F6",
+        ];
+        for (let s = 0; s < SECTIONS.length; s++) {
+          const sec = SECTIONS[s];
+          const bg = sectionBg[s % sectionBg.length];
+          // Section title in colored box with divider line above
+          doc.setDrawColor('#bdbdbd');
+          doc.setLineWidth(0.7);
+          doc.line(15, y, 195, y); // divider line
+          y += 3;
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(13);
+          doc.setFillColor(bg);
+          doc.roundedRect(13, y, 184, 12, 9, 9, "F");
+          doc.setFontSize(12);
+          doc.setTextColor("#23272f");
+          doc.text(
+            `${sec.title}  (Score: ${sectionScores[sec.id]} / ${sectionMax[sec.id]})`,
+            105,
+            y + 8,
+            { align: "center" }
+          );
+          // Table below title, inside box
+          doc.autoTable({
+            startY: y + 12,
+            head: [["Question", "Response", "Score (Weightage)"]],
+            body: sec.items.map((it) => {
+              const key = `${sec.id}_${it.id}`;
+              const r = resp[key];
+              let respText =
+                sec.id === "TSA"
+                  ? r
+                  : r === "yes"
+                  ? "Yes"
+                  : r === "no"
+                  ? "No"
+                  : r === "na"
+                  ? "NA"
+                  : r;
+              let score, maxScore;
+              if (sec.id === "TSA") {
+                score = parseInt(r) || 0;
+                maxScore = it.w;
+              } else if (r === "yes") {
+                score = it.w;
+                maxScore = it.w;
+              } else if (r === "no" && it.wneg) {
+                score = it.wneg;
+                maxScore = it.w;
+              } else if (r === "na") {
+                score = "NA";
+                maxScore = it.w;
+              } else {
+                score = 0;
+                maxScore = it.w;
+              }
+              // Show as score/maxScore, e.g. 1/1, 0/5, NA/3
+              let scoreDisplay = (score === "NA") ? `NA/${maxScore}` : `${score}/${maxScore}`;
+              return [it.q, respText, scoreDisplay];
+            }),
+            margin: { left: 18, right: 18 },
+            styles: { fontSize: 9, cellPadding: 2, textColor: "#23272f" },
+            headStyles: {
+              fillColor: "#dbeafe",
+              textColor: "#23272f",
+              fontStyle: "bold",
+            },
+            tableLineColor: "#c3dafe",
+            tableLineWidth: 0.7,
+            theme: "grid",
+            showHead: "everyPage",
+          });
+          let nextY = doc.lastAutoTable.finalY + 4;
+          // REMARKS: Insert remarks below table
+          if (remarks[sec.id] && remarks[sec.id].trim()) {
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(10);
+            doc.setTextColor("#444");
+            let splitRemarks = doc.splitTextToSize(
+              "Remarks: " + remarks[sec.id],
+              170
+            );
+            doc.text(splitRemarks, 18, nextY);
+            nextY += splitRemarks.length * 6 + 2;
+          }
+          y = nextY + 8;
+          if (y > 200 && s !== SECTIONS.length - 1) {
+            doc.addPage();
+            y = 20;
+          }
+        }
+        // --- IMAGES AT END ---
+        // Grooming & Hygiene Images
+        const groomingImgs = imgs['GroomingHygiene'] || [];
+        const cupImgs = imgs['EndTime'] || [];
+        if (groomingImgs.length || cupImgs.length) {
+          doc.addPage();
+          let imgY = 20;
+          // Grooming Images (left half)
+          if (groomingImgs.length) {
+            doc.setFont('helvetica','bold');
+            doc.setFontSize(13);
+            doc.setTextColor('#263140');
+            doc.text('Grooming & Hygiene Images', 40, imgY);
+            let x = 15, y = imgY + 5;
+            let imgW = 35, imgH = 35, gapY = 8;
+            groomingImgs.forEach((src, i) => {
+              if (i && i % 4 === 0) { y += imgH + gapY; x = 15; }
+              doc.addImage(src, 'JPEG', x, y, imgW, imgH);
+              x += imgW + 5;
+            });
+          }
+          // Cup Images (right half)
+          if (cupImgs.length) {
+            doc.setFont('helvetica','bold');
+            doc.setFontSize(13);
+            doc.setTextColor('#263140');
+            doc.text('Cup Images', 150, imgY);
+            let x = 120, y = imgY + 5;
+            let imgW = 35, imgH = 35, gapY = 8;
+            cupImgs.forEach((src, i) => {
+              if (i && i % 4 === 0) { y += imgH + gapY; x = 120; }
+              doc.addImage(src, 'JPEG', x, y, imgW, imgH);
+              x += imgW + 5;
+            });
+          }
+        }
+        doc.save(`audit_${participantName}_${Date.now()}.pdf`);
+        setDownloading(false);
+        setDownloaded(true);
+        setShowPopup(true);
+        setTimeout(() => {
+          setDownloaded(false);
+          setShowPopup(false);
+        }, 3000);
+      };
+      const resetAll=()=>{
+        safeLS.clear();
+        setResp({});
+        setParticipantName('');
+        setParticipantEmpID('');
+        setStoreName('');
+        setStoreID('');
+        setCoffeeMachineName('');
+        setImgs({});
+        setRemarks({}); // REMARKS
+        safeVibrate([200,200]);
+      };
+      // UI
+      return(
+        <>
+          {showPopup && (
+            <div style={{position:'fixed',top:'30%',left:'50%',transform:'translate(-50%,-50%)',zIndex:9999}} className="px-6 py-4 bg-green-600 text-white rounded-lg shadow-lg text-center fade-in">
+              Report downloaded!
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="space-y-8 p-4 pt-6 max-w-2xl mx-auto bg-white/80 rounded-2xl shadow-lg border border-blue-50">
+            <div className="relative mb-4 flex items-center gap-6">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-900 tracking-tight text-left flex-1">Brew League Score Sheet</h1>
+              <img src="logo.png" alt="Logo" className="h-24 sm:h-32 md:h-40 w-auto rounded-xl shadow-sm bg-white/80 p-1" style={{maxHeight:'6em'}} />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+              <div>
+                <label className="block text-xs font-semibold text-blue-900">Judge Name</label>
+                <input id="judgeName" readOnly value={judgeName} className="w-full p-3 border-0 rounded-xl bg-blue-50 text-blue-900 font-medium focus:ring-2 focus:ring-blue-300"/>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-blue-900">Judge ID</label>
+                <input id="judgeId" readOnly value={judgeId} className="w-full p-3 border-0 rounded-xl bg-blue-50 text-blue-900 font-medium focus:ring-2 focus:ring-blue-300"/>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-blue-900">Participant Name</label>
+                <input id="participantName" value={participantName} onChange={e=>{setParticipantName(e.target.value);safeLS.set('participantName',e.target.value);}} required className={`w-full p-3 border-0 rounded-xl bg-blue-50 text-blue-900 font-medium focus:ring-2 focus:ring-blue-300 ${incompleteFields.some(f=>f.id==='participantName')?'ring-2 ring-red-300 bg-red-50':''}`}/>
+                {incompleteFields.some(f=>f.id==='participantName') && <div className="text-xs text-red-600 font-semibold mt-1">Required</div>}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-blue-900">Participant Emp. ID</label>
+                <input id="participantEmpID" value={participantEmpID} onChange={e=>{setParticipantEmpID(e.target.value);safeLS.set('participantEmpID',e.target.value);}} required className={`w-full p-3 border-0 rounded-xl bg-blue-50 text-blue-900 font-medium focus:ring-2 focus:ring-blue-300 ${incompleteFields.some(f=>f.id==='participantEmpID')?'ring-2 ring-red-300 bg-red-50':''}`}/>
+                {incompleteFields.some(f=>f.id==='participantEmpID') && <div className="text-xs text-red-600 font-semibold mt-1">Required</div>}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-blue-900">Store Name</label>
+                <input id="storeName" value={storeName} onChange={e=>{setStoreName(e.target.value);safeLS.set('storeName',e.target.value);}} required className={`w-full p-3 border-0 rounded-xl bg-blue-50 text-blue-900 font-medium focus:ring-2 focus:ring-blue-300 ${incompleteFields.some(f=>f.id==='storeName')?'ring-2 ring-red-300 bg-red-50':''}`}/>
+                {incompleteFields.some(f=>f.id==='storeName') && <div className="text-xs text-red-600 font-semibold mt-1">Required</div>}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-blue-900">Store ID</label>
+                <input id="storeID" value={storeID} onChange={e=>{setStoreID(e.target.value);safeLS.set('storeID',e.target.value);}} required className={`w-full p-3 border-0 rounded-xl bg-blue-50 text-blue-900 font-medium focus:ring-2 focus:ring-blue-300 ${incompleteFields.some(f=>f.id==='storeID')?'ring-2 ring-red-300 bg-red-50':''}`}/>
+                {incompleteFields.some(f=>f.id==='storeID') && <div className="text-xs text-red-600 font-semibold mt-1">Required</div>}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-blue-900">Name of Coffee Machine</label>
+                <input id="coffeeMachineName" value={coffeeMachineName} onChange={e=>{setCoffeeMachineName(e.target.value);safeLS.set('coffeeMachineName',e.target.value);}} required className={`w-full p-3 border-0 rounded-xl bg-blue-50 text-blue-900 font-medium focus:ring-2 focus:ring-blue-300 ${incompleteFields.some(f=>f.id==='coffeeMachineName')?'ring-2 ring-red-300 bg-red-50':''}`}/>
+                {incompleteFields.some(f=>f.id==='coffeeMachineName') && <div className="text-xs text-red-600 font-semibold mt-1">Required</div>}
+              </div>
+            </div>
+            {SECTIONS.map(sec => (
+              <div key={sec.id} id={`${sec.id}-section`} className={`mb-8 report-box p-4 fade-in ${incompleteFields.some(f=>f.secId===sec.id)?'border-red-400 ring-2 ring-red-200':''}`} tabIndex={0}>
+                <h2 className="section-title drop-shadow-sm text-blue-700">{sec.title}</h2>
+                <table className="w-full border-separate border-spacing-y-1 mt-2 mb-3 table-fixed bg-white/80 rounded-xl overflow-hidden shadow-sm">
+                  <colgroup>
+                    <col style={{width:'60%'}} />
+                    <col style={{width:'13%'}} />
+                    <col style={{width:'12%'}} />
+                    <col style={{width:'15%'}} />
+                  </colgroup>
+                  <thead>
+                    <tr className="bg-blue-50/80">
+                      <th className="border-0 px-3 py-2 text-left text-xs font-bold w-[60%] text-blue-900">Question</th>
+                      {options.map(([opt], idx) => (
+                        <th key={opt} className={`border-0 px-3 py-2 text-center text-xs uppercase font-bold text-blue-900 ${idx===0?'w-[13%]':idx===1?'w-[12%]':'w-[15%]'}`}>{opt}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sec.items.map((it) => {
+                      const key = `${sec.id}_${it.id}`;
+                      const isTimeField = ['DialInStartTime', 'DialInEndTime', 'StartTime', 'EndTime'].includes(it.id);
+                      const missing = incompleteFields.find(f => (f.secId === sec.id && f.itId === it.id));
+                      // CupImage question in EndTime section: show image upload in place of Yes/No/NA
+                      if (sec.id === 'EndTime' && it.id === 'CupImage') {
+                        return (
+                          <tr id={key} key={it.id} className={`even:bg-blue-50/40 hover:bg-blue-100/40 ${missing?'bg-red-50':''}`}>
+                            <td className="border-0 px-3 py-2 align-top font-medium text-blue-900">{it.q}</td>
+                            <td colSpan={options.length} className="border-0 px-3 py-2 text-left align-top">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
+                                <input type="file" accept="image/*" capture="environment" multiple onChange={e => addImages(sec, e)} className={`mt-1 w-full sm:w-auto rounded-xl bg-blue-50 focus:ring-2 focus:ring-blue-300 ${missing?'border-red-400 ring-2 ring-red-200 bg-red-50':''}`} />
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {(imgs[sec.id] || []).map((s, i) => (
+                                    <img key={i} src={s} className="w-16 h-16 object-cover rounded-xl border shadow-sm" />
+                                  ))}
+                                </div>
+                              </div>
+                              {missing && <div className="text-xs text-red-600 mt-1 font-semibold">Required</div>}
+                            </td>
+                          </tr>
+                        );
+                      }
+                      // BeverageName: dropdown instead of yes/no/na
+                      if (sec.id === 'MilkBasedBeverages' && it.id === 'BeverageName') {
+                        const beverageOptions = [
+                          '2 cappuccinos',
+                          '2 lattes',
+                          '2 flat whites'
+                        ];
+                        return (
+                          <tr id={key} key={it.id} className={`even:bg-blue-50/40 hover:bg-blue-100/40 ${missing?'bg-red-50':''}`}>
+                            <td className="border-0 px-3 py-2 font-medium text-blue-900">{it.q}</td>
+                            <td colSpan={options.length} className="border-0 px-3 py-2 text-left align-middle">
+                              <select
+                                className={`rounded-xl px-3 py-2 w-full min-w-[140px] max-w-full text-sm bg-blue-50 focus:ring-2 focus:ring-blue-300 border-0 ${missing?'ring-2 ring-red-200 bg-red-50':''}`}
+                                value={resp[key] || ''}
+                                onChange={e => handleTSA(sec, it, e.target.value)}
+                                required
+                                style={{maxWidth:'100%'}}
+                              >
+                                <option value="" disabled>Select beverage</option>
+                                {beverageOptions.map(opt => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                              {missing && <div className="text-xs text-red-600 mt-1 font-semibold">Required</div>}
+                            </td>
+                          </tr>
+                        );
+                      }
+                      return (
+                        <tr id={key} key={it.id} className={`even:bg-blue-50/40 hover:bg-blue-100/40 ${missing?'bg-red-50':''}`}>
+                          <td className="border-0 px-3 py-2 font-medium text-black">{it.q}</td>
+                          {isTimeField ? (
+                            <td colSpan={options.length} className="border-0 px-3 py-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleCaptureTime(sec, it)}
+                                className={`bg-blue-200/80 px-6 py-2 rounded-full font-semibold text-blue-900 shadow-sm hover:bg-blue-300/80 transition focus:ring-2 focus:ring-blue-400 ${missing?'ring-2 ring-red-200 bg-red-50':''}`}
+                              >
+                                Capture
+                              </button>
+                              {resp[key] && <span className="ml-3 text-base text-blue-900 font-semibold">{resp[key]}</span>}
+                              {missing && <div className="text-xs text-red-600 mt-1 font-semibold">Required</div>}
+                            </td>
+                          ) : (
+                            <>
+                              {options.map(([opt]) => {
+                                const sel = resp[key] === opt;
+                                return (
+                                  <td key={opt} className={`border-0 px-1 py-1 ${missing ? 'bg-red-50 border-red-400 ring-2 ring-red-200' : ''}`}>
+                                    <div className="flex justify-center w-full">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOption(sec, it, opt)}
+                                        className={
+                                          sel
+                                            ? `${colorMap[opt].selected} px-2 py-0.5 text-[10px] rounded-full shadow-md font-bold transition`
+                                            : `${colorMap[opt].base} text-gray-900 px-2 py-0.5 text-[10px] rounded-full shadow-sm font-semibold transition`
+                                        }
+                                      >
+                                        {opt.toUpperCase()}
+                                      </button>
+                                    </div>
+                                  </td>
+                                );
+                              })}
+                            </>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <div className="mt-3 fade-in">
+                  <label className="block text-xs font-semibold text-blue-900">Section Remarks</label>
+                  <textarea
+                    value={remarks[sec.id] || ''}
+                    onChange={e => setRemarks(r => ({ ...r, [sec.id]: e.target.value }))}
+                    className="w-full p-3 border-0 rounded-xl bg-blue-50 mt-1 focus:ring-2 focus:ring-blue-300 text-blue-900"
+                    placeholder="Enter remarks for this section (optional)"
+                    rows={2}
+                  />
+                </div>
+                {/* Only show image upload for Grooming & Hygiene section, and show error if missing */}
+                {sec.id === 'GroomingHygiene' && (
+                  <div className="mt-3 fade-in">
+                    <label className="block text-xs font-semibold text-blue-900">Upload Images</label>
+                    <input type="file" accept="image/*" capture="environment" multiple onChange={e => addImages(sec, e)} className={`mt-1 rounded-xl bg-blue-50 focus:ring-2 focus:ring-blue-300 ${incompleteFields.some(f=>f.type==='img'&&f.secId==='GroomingHygiene')?'border-red-400 ring-2 ring-red-200 bg-red-50':''}`} />
+                    <div className="flex space-x-2 mt-2 overflow-x-auto">
+                      {(imgs[sec.id] || []).map((s, i) => <img key={i} src={s} className="w-16 h-16 object-cover rounded-xl border shadow-sm" />)}
+                    </div>
+                    {incompleteFields.some(f=>f.type==='img'&&f.secId==='GroomingHygiene') && <div className="text-xs text-red-600 mt-1 font-semibold">At least one Grooming & Hygiene image is required</div>}
+                  </div>
+                )}
+              </div>
+            ))}
+            <div className="flex space-x-4 fade-in mt-6">
+              <button type="button" onClick={resetAll} className="flex-1 bg-blue-600 text-white py-3 rounded-full font-bold shadow-md hover:bg-blue-700 transition text-lg">New Response</button>
+              <button type="submit" className={`flex-1 bg-green-600 text-white py-3 rounded-full font-bold shadow-md hover:bg-green-700 transition text-lg ${downloading?'opacity-70 pointer-events-none':''}`}>
+                {downloading? 'Generating Report...':'Submit & Download PDF'}
+              </button>
+            </div>
+          </form>
+        </>
+      );
+    }
+  </script>
+</head>
+<body class="bg-gray-100">
+  <div id="root"></div>
+  <script type="text/babel">
+    // Show the root only after React has rendered to prevent code flash
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+    document.getElementById('root').style.display = '';
+  </script>
 </body>
 </html>
